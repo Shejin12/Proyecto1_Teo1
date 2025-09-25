@@ -132,7 +132,7 @@ if(isset($_POST['comprar']) && $puede_comprar) {
 
 <?php if($puede_comprar): ?>
 <form method="post">
-    <button type="submit" name="comprar">Comprar y Crear Computadora</button>
+    <button type="submit" name="comprar">Comprar</button>
 </form>
 <?php else: ?>
 <p style="color:red;">Debes agregar al menos un producto de cada tipo (RAM, SSD, Fuente, Gabinete, Procesador) para poder comprar.</p>
