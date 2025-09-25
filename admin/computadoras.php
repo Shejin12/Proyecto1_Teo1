@@ -14,22 +14,43 @@ if (isset($_POST['agregar'])) {
     $gabinete = $_POST['gabinete'];
     $procesador = $_POST['procesador'];
 
+    $stmt = $pdo->prepare("SELECT Precio FROM Productos WHERE ID = ?");
+    
+    $stmt->execute([$ram]);
+    $precio_ram = $stmt->fetchColumn();
+
+    $stmt->execute([$ssd]);
+    $precio_ssd = $stmt->fetchColumn();
+
+    $stmt->execute([$fuente]);
+    $precio_fuente = $stmt->fetchColumn();
+
+    $stmt->execute([$gabinete]);
+    $precio_gabinete = $stmt->fetchColumn();
+
+    $stmt->execute([$procesador]);
+    $precio_procesador = $stmt->fetchColumn();
+
+    $precio_total = $precio_ram + $precio_ssd + $precio_fuente + $precio_gabinete + $precio_procesador;
+
     $stmt = $pdo->prepare("
-    INSERT INTO Computadora
-    (Nombre, ProductoRAM, ProductoSSD, ProductoFuente, ProductoGabinete, ProductoProcesador, Precio, Estado)
-    VALUES (?, ?, ?, ?, ?, ?, ?, 'En venta')
-");
+        INSERT INTO Computadora
+        (Nombre, ProductoRAM, ProductoSSD, ProductoFuente, ProductoGabinete, ProductoProcesador, Precio, Estado)
+        VALUES (?, ?, ?, ?, ?, ?, ?, 'En venta')
+    ");
 
-$stmt->execute([
-    $_POST['nombre'],
-    $_POST['ram'],        
-    $_POST['ssd'],        
-    $_POST['fuente'],     
-    $_POST['gabinete'],   
-    $_POST['procesador'], 
-    $_POST['precio']
-]);
+    $stmt->execute([
+        $_POST['nombre'],
+        $ram,
+        $ssd,
+        $fuente,
+        $gabinete,
+        $procesador,
+        $precio_total
+    ]);
 
+    header("Location: computadoras.php");
+    exit;
 }
 
 if (isset($_GET['eliminar'])) {
@@ -40,13 +61,11 @@ if (isset($_GET['eliminar'])) {
     exit;
 }
 
-
 $productos_ram = $pdo->query("SELECT * FROM Productos WHERE Tipo='RAM'")->fetchAll(PDO::FETCH_ASSOC);
 $productos_ssd = $pdo->query("SELECT * FROM Productos WHERE Tipo='SSD'")->fetchAll(PDO::FETCH_ASSOC);
 $productos_fuente = $pdo->query("SELECT * FROM Productos WHERE Tipo='Fuente'")->fetchAll(PDO::FETCH_ASSOC);
 $productos_gabinete = $pdo->query("SELECT * FROM Productos WHERE Tipo='Gabinete'")->fetchAll(PDO::FETCH_ASSOC);
 $productos_procesador = $pdo->query("SELECT * FROM Productos WHERE Tipo='Procesador'")->fetchAll(PDO::FETCH_ASSOC);
-
 
 $computadoras = $pdo->query("
     SELECT c.ID, c.Nombre,
@@ -62,9 +81,9 @@ $computadoras = $pdo->query("
     JOIN Productos f ON c.ProductoFuente = f.ID
     JOIN Productos g ON c.ProductoGabinete = g.ID
     JOIN Productos p ON c.ProductoProcesador = p.ID
+    WHERE c.Estado = 'En venta'
     ORDER BY c.ID
 ")->fetchAll(PDO::FETCH_ASSOC);
-
 ?>
 
 <!DOCTYPE html>
@@ -81,21 +100,25 @@ $computadoras = $pdo->query("
 <table border="1" cellpadding="5" cellspacing="0">
     <tr>
         <th>ID</th>
+        <th>Nombre</th>
         <th>RAM</th>
         <th>SSD</th>
         <th>Fuente</th>
         <th>Gabinete</th>
         <th>Procesador</th>
+        <th>Precio</th>
         <th>Acciones</th>
     </tr>
     <?php foreach($computadoras as $c): ?>
     <tr>
         <td><?= $c['ID'] ?></td>
+        <td><?= htmlspecialchars($c['Nombre']) ?></td>
         <td><?= htmlspecialchars($c['RAM']) ?></td>
         <td><?= htmlspecialchars($c['SSD']) ?></td>
         <td><?= htmlspecialchars($c['Fuente']) ?></td>
         <td><?= htmlspecialchars($c['Gabinete']) ?></td>
         <td><?= htmlspecialchars($c['Procesador']) ?></td>
+        <td><?= number_format($c['Precio'],2) ?></td>
         <td>
             <a href="computadoras.php?eliminar=<?= $c['ID'] ?>" onclick="return confirm('¿Eliminar esta computadora?');">Eliminar</a>
         </td>
@@ -105,6 +128,9 @@ $computadoras = $pdo->query("
 
 <h2>Agregar Nueva Computadora</h2>
 <form method="post">
+    <label>Nombre de la Computadora:</label><br>
+    <input type="text" name="nombre" required><br><br>
+
     <label>RAM:</label><br>
     <select name="ram" required>
         <?php foreach($productos_ram as $p): ?>
